@@ -1,0 +1,11 @@
+# Folders to be ignored
+/junk
+/frontEnd
+#Blanket File Types
+*csv
+*txt
+*xml
+#Test Ground
+sub.ps1
+*test*
+MAPI.xml
