@@ -36,30 +36,71 @@ function isItStationDriveCode {
         return 1
     }
 }
+function scrubber {
+    Param([string]$Segment)
+    
+    switch ($Segment) {
+        "MUC" { return "" }
+        "HAM" { return "" }
+        "HQ" { return "" }
+        "BRE" { return "" }
+        "CNG" { return "" }
+        "BER" { return "" }
+        "HAJ" { return "" }
+        "FRA" { return "" }
+        Default { return $Segment }
+    }
+}
+
+function suffixPrefixScrubber {
+    Param([string]$String)
+    $first, $second = $String.Split("_")
+    if ($second.length -eq 0) {
+        return $String
+    }
+    else {
+        $first = scrubber -Segment $first
+        $second = scrubber -Segment $second
+        return $first + $second
+    }
+}
 
 function pathCreator {
     Param($Path)
     #Returns new path based on the old Path
-    
     #No blanks
-    if($Path.length -eq 0){
+    if ($Path.length -eq 0) {
         return $path
     }
-
     #Analyse the current path
     $f, $strings = $Path.Split("\")
     $station = $strings[1].ToUpper()
-    
     if ($station -eq 'FILEDCBCLUSTER') {
         #Ignore if already in right place
         return $path
     }
-    
-
-    $folder = $strings[2]
-    $newPath = "\\FILEDCBCLUSTER\"
+    #Dealing with folder trees
+    if ($strings.length -gt 3) {
+        $strings.length
+        for ($i = 2; $i -lt $strings.length; $i++) {
+            if ($i -eq ($strings.length - 1)) {
+                $segment = suffixPrefixScrubber -String $strings[$i]
+                $folder += $segment
+            }
+            else {
+                $segment = suffixPrefixScrubber -String $strings[$i]
+                $folder += $segment + "/"
+            }
+            
+        }
+    }
+    else {
+        $segment = suffixPrefixScrubber -String $strings[2]
+        $folder += $segment
+    }
     #Figuring out stations
     #Speed Up with REGEX CURRENTLY SLOW
+    $newPath = "\\FILEDCBCLUSTER\"
     switch -Wildcard ($station) {
         "FILEFRA*" {
             "Frankfurt"
@@ -77,7 +118,7 @@ function pathCreator {
             "HQ"
             return $newPath + "HQ_" + $folder + "$"
         }
-        "DCCNG*" {
+        "DCCGN*" {
             "Koeln"
             return $newPath + "CNG_" + $folder + "$"
         }
@@ -112,15 +153,15 @@ function pathCreator {
 }
 
 #Scan and Change
-$GPO = Get-GPO -All
+# $GPO = Get-GPO -All
  
-foreach ($Policy in $GPO) {
+# foreach ($Policy in $GPO) {
 
-    $GPOID = $Policy.Id
-    $GPODom = $Policy.DomainName
-    $GPODisp = $Policy.DisplayName
-    changeDrivePathDetails -GPI $GPOID -GPDomain $GPODom
-} 
+#     $GPOID = $Policy.Id
+#     $GPODom = $Policy.DomainName
+#     $GPODisp = $Policy.DisplayName
+#     changeDrivePathDetails -GPI $GPOID -GPDomain $GPODom
+# } 
 
 #Paths to Test
 #These two are some fresh bullshit! 
@@ -132,9 +173,19 @@ foreach ($Policy in $GPO) {
 #Copy Permissions
 # Get-Acl -Path C:\Folder1 | Set-Acl -Path C:\Folder2
 
-
+# \\FILEHAJ01\USERSHARE$\%USERNAME%\Documents
 # \\filefra01\company
 # \\FILEDCBCLUSTER\ITNEU
 
-# pathCreator -Path "\\DCDUS01\sekretariat"
+pathCreator -Path "\\filefra01\company"
+pathCreator -Path "\\FILEHAJ01\USERSHARE$\%USERNAME%\Documents"
+pathCreator -Path "\\filefra01\FRA_tiger"
+pathCreator -Path "\\filefra01\tiger_FRA"
+# $X = suffixPrefixScrubber "FRA_tiger"
+# $Y = suffixPrefixScrubber "tiger_FRA"
+# $Z = suffixPrefixScrubber "tiger"
+
+# $X
+# $Y
+# $Z
 # changeDrivePathDetails -GPDomain $GPDom -GPID $GPID
