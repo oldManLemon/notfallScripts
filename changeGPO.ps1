@@ -1,13 +1,14 @@
 
 #GPO PANIC CHANGE
-$GPO = Get-GPO -Name "AndrewDriveGPO"
-$GPID = $GPO.Id
-$GPDom = $GPO.DomainName
+# $GPO = Get-GPO -Name "AndrewDriveGPO"
+# $GPID = $GPO.Id
+# $GPDom = $GPO.DomainName
 
 #Path should be consistent
 
 function changeDrivePathDetails {
-    Param($GPDomain, $GPID)
+    Param($GPDom, $GPID)
+    
     #Changes path to a newly specified path
     if (Test-Path "\\$($GPDom)\SYSVOL\$($GPDom)\Policies\{$($GPID)}\User\Preferences\Drives\Drives.xml") {
         $file = "\\$($GPDom)\SYSVOL\$($GPDom)\Policies\{$($GPID)}\User\Preferences\Drives\Drives.xml"
@@ -89,7 +90,7 @@ function pathCreator {
             }
             else {
                 $segment = suffixPrefixScrubber -String $strings[$i]
-                $folder += $segment + "/"
+                $folder += $segment + "\"
             }
             
         }
@@ -149,19 +150,18 @@ function pathCreator {
         }
     }
     
-
 }
 
 #Scan and Change
-# $GPO = Get-GPO -All
+$GPO = Get-GPO -All
  
-# foreach ($Policy in $GPO) {
+foreach ($Policy in $GPO) {
 
-#     $GPOID = $Policy.Id
-#     $GPODom = $Policy.DomainName
-#     $GPODisp = $Policy.DisplayName
-#     changeDrivePathDetails -GPI $GPOID -GPDomain $GPODom
-# } 
+    $GPOID = $Policy.Id
+    $GPODom = $Policy.DomainName
+    $GPODisp = $Policy.DisplayName
+    changeDrivePathDetails -GPI $GPOID -GPDom $GPODom
+} 
 
 #Paths to Test
 #These two are some fresh bullshit! 
@@ -177,10 +177,10 @@ function pathCreator {
 # \\filefra01\company
 # \\FILEDCBCLUSTER\ITNEU
 
-pathCreator -Path "\\filefra01\company"
-pathCreator -Path "\\FILEHAJ01\USERSHARE$\%USERNAME%\Documents"
-pathCreator -Path "\\filefra01\FRA_tiger"
-pathCreator -Path "\\filefra01\tiger_FRA"
+# pathCreator -Path "\\filefra01\company"
+# pathCreator -Path "\\FILEHAJ01\USERSHARE$\%USERNAME%\Documents"
+# pathCreator -Path "\\filefra01\FRA_tiger"
+# pathCreator -Path "\\filefra01\tiger_FRA"
 # $X = suffixPrefixScrubber "FRA_tiger"
 # $Y = suffixPrefixScrubber "tiger_FRA"
 # $Z = suffixPrefixScrubber "tiger"
