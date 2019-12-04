@@ -45,7 +45,7 @@ function scrubber {
         "HAM" { return "" }
         "HQ" { return "" }
         "BRE" { return "" }
-        "CNG" { return "" }
+        "CGN" { return "" }
         "BER" { return "" }
         "HAJ" { return "" }
         "FRA" { return "" }
@@ -71,18 +71,17 @@ function pathCreator {
     #Returns new path based on the old Path
     #No blanks
     if ($Path.length -eq 0) {
-        return $path
+        return $Path
     }
     #Analyse the current path
     $f, $strings = $Path.Split("\")
     $station = $strings[1].ToUpper()
     if ($station -eq 'FILEDCBCLUSTER') {
         #Ignore if already in right place
-        return $path
+        return $Path
     }
     #Dealing with folder trees
     if ($strings.length -gt 3) {
-        $strings.length
         for ($i = 2; $i -lt $strings.length; $i++) {
             if ($i -eq ($strings.length - 1)) {
                 $segment = suffixPrefixScrubber -String $strings[$i]
@@ -144,24 +143,13 @@ function pathCreator {
             return '******'
         }
         default {
-            $station
-            "Not suppose to happen"
-            return '******'
+            return $Path
         }
     }
     
 }
 
-#Scan and Change
-$GPO = Get-GPO -All
- 
-foreach ($Policy in $GPO) {
 
-    $GPOID = $Policy.Id
-    $GPODom = $Policy.DomainName
-    $GPODisp = $Policy.DisplayName
-    changeDrivePathDetails -GPI $GPOID -GPDom $GPODom
-} 
 
 #Paths to Test
 #These two are some fresh bullshit! 
@@ -184,8 +172,30 @@ foreach ($Policy in $GPO) {
 # $X = suffixPrefixScrubber "FRA_tiger"
 # $Y = suffixPrefixScrubber "tiger_FRA"
 # $Z = suffixPrefixScrubber "tiger"
+# suffixPrefixScrubber "CGN_GGR"
+
 
 # $X
 # $Y
 # $Z
 # changeDrivePathDetails -GPDomain $GPDom -GPID $GPID
+
+
+#  .d8888.  .o88b.  .d88b.  d8888b. d88888b 
+#  88'  YP d8P  Y8 .8P  Y8. 88  `8D 88'     
+#  `8bo.   8P      88    88 88oodD' 88ooooo 
+#    `Y8b. 8b      88    88 88~~~   88~~~~~ 
+#  db   8D Y8b  d8 `8b  d8' 88      88.     
+#  `8888Y'  `Y88P'  `Y88P'  88      Y88888P 
+
+#Scope
+# Scan and Change
+$GPO = Get-GPO -All
+ 
+foreach ($Policy in $GPO) {
+
+    $GPOID = $Policy.Id
+    $GPODom = $Policy.DomainName
+    $GPODisp = $Policy.DisplayName
+    changeDrivePathDetails -GPI $GPOID -GPDom $GPODom
+} 
