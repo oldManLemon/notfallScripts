@@ -1,8 +1,34 @@
+param([string]$Station)
 
-#GPO PANIC CHANGE
-# $GPO = Get-GPO -Name "AndrewDriveGPO"
-# $GPID = $GPO.Id
-# $GPDom = $GPO.DomainName
+#Test args
+if ($station -eq '') {
+    write-host "No Station Provided `n Stop"
+    break
+}
+
+#Station Flags
+$MucGO = $false	
+$HamGO = $false	
+$HqGO = $false	
+$BreGO = $false	
+$CgnGO = $false	
+$BerGO = $false	
+$HajGO = $false	
+$FraGO = $false	
+$AllGO = $false	
+
+switch ($Station) {
+    "MUC" { $MucGO = $true }
+    "HAM" { $HamGO = $true }
+    "HQ" { $HqGO = $true }
+    "BRE" { $BreGO = $true }
+    "CGN" { $CgnGO = $true }
+    "BER" { $BerGO = $true }
+    "HAJ" { $HajGO = $true }
+    "FRA" { $FraGO = $true }
+    "ALL" { $AllGO = $true }
+    Default { return "Station Not Recognised" }
+}
 
 #Path should be consistent
 
@@ -103,40 +129,71 @@ function pathCreator {
     $newPath = "\\FILEDCBCLUSTER\"
     switch -Wildcard ($station) {
         "FILEFRA*" {
-            "Frankfurt"
-            return $newPath + "FRA_" + $folder + "$"
+            
+            if ($FraGO) {
+                return $newPath + "FRA_" + $folder + "$" 
+            }
+            else {
+                return $path
+            }
+            
         }
         "DCMUC*" {
-            "Munich"
-            return $newPath + "MUC_" + $folder + "$"
+            if ($FMUCGO) {
+                return $newPath + "MUC_" + $folder + "$" 
+            }
+            else {
+                return $path
+            }
         }
         "FILEHAM*" {
-            "Hamburg"
-            return $newPath + "HAM_" + $folder + "$"
+            if($HamGO){
+                return $newPath + "HAM_" + $folder + "$" 
+             }else{
+                 return $path
+             }
         }
         "DCHQ*" {
-            "HQ"
-            return $newPath + "HQ_" + $folder + "$"
+            if($HqGO){
+                return $newPath + "HQ_" + $folder + "$" 
+             }else{
+                 return $path
+             }
         }
         "DCCGN*" {
-            "Koeln"
-            return $newPath + "CNG_" + $folder + "$"
+            if($CgnGO){
+                return $newPath + "CGN_" + $folder + "$" 
+             }else{
+                 return $path
+             }
         }
         "DCDUS*" {
-            "Duesseledorf"
-            return $newPath + "DUS_" + $folder + "$"
+            if($DusGO){
+                return $newPath + "DUS_" + $folder + "$" 
+             }else{
+                 return $path
+             }
         }
         "DCBER*" {
-            "Berlin"
-            return $newPath + "BER_" + $folder + "$"
+            if($BerGO){
+                return $newPath + "BER_" + $folder + "$" 
+             }else{
+                 return $path
+             }
         }
         "FILEBRE*" {
-            "Bremen"
-            return $newPath + "BRE_" + $folder + "$"
+            if($BreGO){
+                return $newPath + "BRE_" + $folder + "$" 
+             }else{
+                 return $path
+             }
         }
         "FILEHAJ*" {
-            "Hannover"
-            return $newPath + "HAJ_" + $folder + "$"
+            if($HajGO){
+                return $newPath + "HAJ_" + $folder + "$" 
+             }else{
+                 return $path
+             }
         }
         "DCEG*" {
             "DELETEME"
