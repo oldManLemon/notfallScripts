@@ -44,6 +44,7 @@ function changeDrivePathDetails {
         #OK Drivemaps contain more than one map... some my suggest obviosuly
         [xml]$xml = Get-Content $file
         foreach ( $drivemap in $xml.Drives.Drive ) {
+
             $path = $drivemap.Properties.GetAttribute("path")
             Write-Output "OLD path: "$path
             $path = pathCreator -Path $path
@@ -257,5 +258,6 @@ foreach ($Policy in $GPO) {
     $GPOID = $Policy.Id
     $GPODom = $Policy.DomainName
     $GPODisp = $Policy.DisplayName
+    Write-Output $GPODisp
     changeDrivePathDetails -GPI $GPOID -GPDom $GPODom
 } 
