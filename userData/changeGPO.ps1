@@ -143,7 +143,7 @@ function pathCreator {
             
         }
         "DCMUC*" {
-            if ($FMUCGO) {
+            if ($MUCGO) {
                 return $newPath + "MUC_" + $folder + "$" 
             }
             else {
