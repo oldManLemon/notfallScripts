@@ -1,4 +1,7 @@
-param([string]$Station)
+param([Parameter(mandatory=$true)]
+    [string]$Station
+
+    )
 
 #Test args
 if ($station -eq '') {
@@ -15,18 +18,18 @@ $CgnGO = $false
 $BerGO = $false	
 $HajGO = $false	
 $FraGO = $false	
-$AllGO = $false	
+
 
 switch ($Station) {
     "MUC" { $MucGO = $true }
     "HAM" { $HamGO = $true }
-    "HQ" { $HqGO = $true }
+    "HQ"  { $HqGO = $true  }
     "BRE" { $BreGO = $true }
     "CGN" { $CgnGO = $true }
     "BER" { $BerGO = $true }
     "HAJ" { $HajGO = $true }
     "FRA" { $FraGO = $true }
-    "ALL" { $AllGO = $true }
+    "ALL" { $MucGO=$HamGO=$HqGO=$BreGO=$CgnGO=$BerGO=$HajGO=$FraGO = $true}
     Default { return "Station Not Recognised" }
 }
 

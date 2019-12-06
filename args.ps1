@@ -26,7 +26,10 @@ switch ($Station) {
     "BER" { $BerGO= $true}
     "HAJ" { $HajGO= $true}
     "FRA" { $FraGO= $true}
-    "ALL" { $AllGO= $true}
+    "ALL" { $MucGO=$HamGO=$HqGO=$BreGO=$CgnGO=$BerGO=$HajGO=$FraGO = $true}
     Default { return "Station Not Recognised" }
 }
 
+$HajGO
+
+$FraGO
