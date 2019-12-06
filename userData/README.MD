@@ -22,10 +22,10 @@ Run the script with a station flag to indicate which station to target.
 4. ACHTUNG, KEINE RÜCKGÄNGIG MÖGLICH!
 
 ### Flags
-`-Station` Station flags
+`-Station` Station flags (Mandatory)
 
  - `MUC` {München}
- - `HAM` {Hambur}
+ - `HAM` {Hamburg}
  - `HQ`   {Head Quaters}
  - `BRE` {Bremen}
  - `CGN` {Köln}
