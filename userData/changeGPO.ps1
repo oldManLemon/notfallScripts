@@ -59,23 +59,25 @@ function restore {
             Write-Output | Get-Item $Path*
             Write-Host "Restore Unsucessful" -ForegroundColor Red
         }
-        try{
+        try {
             Remove-Item $XMLFile
         }
-        catch{
+        catch {
             Write-Output "Failed to Remove Drive Folder: $XMLFile"
             Write-Host "Restore Unsucessful" -ForegroundColor Red
         }
-        try{
+        try {
             Rename-Item  $BackupOfTheBackup -NewName "Drives.xml"
             Write-Host "Restore Successful" -ForegroundColor Green
-        }catch{
+        }
+        catch {
             Write-Output "Failed to Rename and Restore backup : $BackupOfTheBackup "
             Write-Host "Restore Unsucessful" -ForegroundColor Red
         }
        
     }
     else {
+        Write-Host "No Restore Point Available" -ForegroundColor Red
         Write-Output "No Restore Point Available"
 
     }
@@ -90,40 +92,37 @@ function changeDrivePathDetails {
     if (Test-Path "\\$($GPDom)\SYSVOL\$($GPDom)\Policies\{$($GPID)}\User\Preferences\Drives\Drives.xml") {
         #$file = "\\$($GPDom)\SYSVOL\$($GPDom)\Policies\{$($GPID)}\User\Preferences\Drives\Drives.xml"
         $DrivePath = "\\$($GPDom)\SYSVOL\$($GPDom)\Policies\{$($GPID)}\User\Preferences\Drives\"
-        $file =$DrivePath+"Drives.xml"
+        $file = $DrivePath + "Drives.xml"
         Write-Output 'Policy Name: '$DisplayName
 
-        #Check 
-        if($Restore){
-            "I will now restore"
-            restore -Path $DrivePath
-        }else{
-            #Write the Restore point
-        if (-Not (Test-Path $file".orig")) {
-            Write-Output "Restore Point Created"
-            Write-Output $file".orig"
-            Copy-Item -Path $file -Destination $file".orig"  
-        }
-        else {
-            Write-Output "Restore Point Found"
-            Write-Output $file".orig"
-        }
+      
+       
+            # #Write the Restore point
+            # if (-Not (Test-Path $file".orig")) {
+            #     Write-Output "Restore Point Created"
+            #     Write-Output $file".orig"
+            #     Copy-Item -Path $file -Destination $file".orig"  
+            # }
+            # else {
+            #     Write-Output "Restore Point Found"
+            #     Write-Output $file".orig"
+            # }
         
 
-        #OK Drivemaps contain more than one map... some my suggest obviously
-        [xml]$xml = Get-Content $file
-        foreach ( $drivemap in $xml.Drives.Drive ) {
+            #OK Drivemaps contain more than one map... some my suggest obviously
+            [xml]$xml = Get-Content $file
+            foreach ( $drivemap in $xml.Drives.Drive ) {
 
-            $path = $drivemap.Properties.GetAttribute("path")
-            Write-Output "OLD path: "$path
-            $path = pathCreator -Path $path
-            Write-Output "New path: "$path
-            Write-Output "*************************`n"
-            #$xml.Drives.Drive.Properties.SetAttribute("path", $path)
-            #$xml.Save($file)
-        }
+                $path = $drivemap.Properties.GetAttribute("path")
+                Write-Output "OLD path: "$path
+                $path = pathCreator -Path $path
+                Write-Output "New path: "$path
+                Write-Output "*************************`n"
+                #$xml.Drives.Drive.Properties.SetAttribute("path", $path)
+                #$xml.Save($file)
+            }
 
-        }
+        
 
         
         
@@ -141,6 +140,8 @@ function isItStationDriveCode {
     }
 }
 function scrubber {
+    #Checks a segment of text to see if matches a stations
+    #Returns blank if matches a station code otherwise returns original string
     Param([string]$Segment)
     
     switch ($Segment) {
@@ -157,6 +158,8 @@ function scrubber {
 }
 
 function suffixPrefixScrubber {
+    #Gets filename and splits it passes it through Segement and returns the cleaned file name
+    #EG HAM_file or file_HAM becomes file
     Param([string]$String)
     $first, $second = $String.Split("_")
     if ($second.length -eq 0) {
@@ -299,6 +302,7 @@ function pathCreator {
 #  `8888Y'  `Y88P'  `Y88P'  88      Y88888P 
 
 #Scope
+#Here you can define your scope
 # Scan and Change
 # $GPO = Get-GPO -All
 $GPO = Get-GPO -Name AndrewDriveGPO
