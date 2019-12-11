@@ -1,7 +1,9 @@
-param([Parameter(mandatory=$true)]
-    [string]$Station
+param([Parameter(mandatory = $true)]
+    [string]$Station,
+    [switch]$Restore, #Should restore the files and delete the drives.xml
+    [switch] $ForceNewRestorePoint #Will delete the orig files and replace them with new copies. 
 
-    )
+)
 
 #Test args
 if ($station -eq '') {
@@ -9,7 +11,8 @@ if ($station -eq '') {
     break
 }
 
-#Station Flags
+#Flag Collection
+#Statations
 $MucGO = $false	
 $HamGO = $false	
 $HqGO = $false	
@@ -20,28 +23,94 @@ $HajGO = $false
 $FraGO = $false	
 
 
+
 switch ($Station) {
     "MUC" { $MucGO = $true }
     "HAM" { $HamGO = $true }
-    "HQ"  { $HqGO = $true  }
+    "HQ" { $HqGO = $true }
     "BRE" { $BreGO = $true }
     "CGN" { $CgnGO = $true }
     "BER" { $BerGO = $true }
     "HAJ" { $HajGO = $true }
     "FRA" { $FraGO = $true }
-    "ALL" { $MucGO=$HamGO=$HqGO=$BreGO=$CgnGO=$BerGO=$HajGO=$FraGO = $true}
+    "ALL" { $MucGO = $HamGO = $HqGO = $BreGO = $CgnGO = $BerGO = $HajGO = $FraGO = $true }
     Default { return "Station Not Recognised" }
 }
 
-#Path should be consistent
+function restore {
+    #Restores the backup files to thier original State. 
+    #It is error Handled and built in a round a bout method to problems
+    Param([string]$Path)
+    $Backup = $Path + "Drives.xml.orig"
+    $XMLFile = $Path + "Drives.xml"
+    $BackupOfTheBackup = $Path + "Drives.x"
+    if (Test-Path $Backup) {
+        "I will now remove"
+        #Delete XML!
+        try {
+            #A bit much here but it should fail if it can't rename the back up meaning it doesn't exist
+            #This is done so to avoid deletion of Drives.xml beofre the seeing if the rename is there as the over the network this can be slow to Test-Path accuratly.
+            #Thus should avoid false postives. 
+            Rename-Item $Backup -NewName "Drives.x"
+            
+        }
+        catch {
+            Write-Output "Failed to Find Restore Point"
+            Write-Output | Get-Item $Path*
+            Write-Host "Restore Unsucessful" -ForegroundColor Red
+        }
+        try{
+            Remove-Item $XMLFile
+        }
+        catch{
+            Write-Output "Failed to Remove Drive Folder: $XMLFile"
+            Write-Host "Restore Unsucessful" -ForegroundColor Red
+        }
+        try{
+            Rename-Item  $BackupOfTheBackup -NewName "Drives.xml"
+            Write-Host "Restore Successful" -ForegroundColor Green
+        }catch{
+            Write-Output "Failed to Rename and Restore backup : $BackupOfTheBackup "
+            Write-Host "Restore Unsucessful" -ForegroundColor Red
+        }
+       
+    }
+    else {
+        Write-Output "No Restore Point Available"
 
+    }
+
+}
+
+#Path should be consistent
 function changeDrivePathDetails {
-    Param($GPDom, $GPID)
+    Param($GPDom, $GPID, $DisplayName)
     
     #Changes path to a newly specified path
     if (Test-Path "\\$($GPDom)\SYSVOL\$($GPDom)\Policies\{$($GPID)}\User\Preferences\Drives\Drives.xml") {
-        $file = "\\$($GPDom)\SYSVOL\$($GPDom)\Policies\{$($GPID)}\User\Preferences\Drives\Drives.xml"
-        #OK Drivemaps contain more than one map... some my suggest obviosuly
+        #$file = "\\$($GPDom)\SYSVOL\$($GPDom)\Policies\{$($GPID)}\User\Preferences\Drives\Drives.xml"
+        $DrivePath = "\\$($GPDom)\SYSVOL\$($GPDom)\Policies\{$($GPID)}\User\Preferences\Drives\"
+        $file =$DrivePath+"Drives.xml"
+        Write-Output 'Policy Name: '$DisplayName
+
+        #Check 
+        if($Restore){
+            "I will now restore"
+            restore -Path $DrivePath
+        }else{
+            #Write the Restore point
+        if (-Not (Test-Path $file".orig")) {
+            Write-Output "Restore Point Created"
+            Write-Output $file".orig"
+            Copy-Item -Path $file -Destination $file".orig"  
+        }
+        else {
+            Write-Output "Restore Point Found"
+            Write-Output $file".orig"
+        }
+        
+
+        #OK Drivemaps contain more than one map... some my suggest obviously
         [xml]$xml = Get-Content $file
         foreach ( $drivemap in $xml.Drives.Drive ) {
 
@@ -53,6 +122,10 @@ function changeDrivePathDetails {
             #$xml.Drives.Drive.Properties.SetAttribute("path", $path)
             #$xml.Save($file)
         }
+
+        }
+
+        
         
     }
 }#End changeDrivePathDetails
@@ -151,53 +224,60 @@ function pathCreator {
             }
         }
         "FILEHAM*" {
-            if($HamGO){
+            if ($HamGO) {
                 return $newPath + "HAM_" + $folder + "$" 
-             }else{
-                 return $path
-             }
+            }
+            else {
+                return $path
+            }
         }
         "DCHQ*" {
-            if($HqGO){
+            if ($HqGO) {
                 return $newPath + "HQ_" + $folder + "$" 
-             }else{
-                 return $path
-             }
+            }
+            else {
+                return $path
+            }
         }
         "DCCGN*" {
-            if($CgnGO){
+            if ($CgnGO) {
                 return $newPath + "CGN_" + $folder + "$" 
-             }else{
-                 return $path
-             }
+            }
+            else {
+                return $path
+            }
         }
         "DCDUS*" {
-            if($DusGO){
+            if ($DusGO) {
                 return $newPath + "DUS_" + $folder + "$" 
-             }else{
-                 return $path
-             }
+            }
+            else {
+                return $path
+            }
         }
         "DCBER*" {
-            if($BerGO){
+            if ($BerGO) {
                 return $newPath + "BER_" + $folder + "$" 
-             }else{
-                 return $path
-             }
+            }
+            else {
+                return $path
+            }
         }
         "FILEBRE*" {
-            if($BreGO){
+            if ($BreGO) {
                 return $newPath + "BRE_" + $folder + "$" 
-             }else{
-                 return $path
-             }
+            }
+            else {
+                return $path
+            }
         }
         "FILEHAJ*" {
-            if($HajGO){
+            if ($HajGO) {
                 return $newPath + "HAJ_" + $folder + "$" 
-             }else{
-                 return $path
-             }
+            }
+            else {
+                return $path
+            }
         }
         "DCEG*" {
             "DELETEME"
@@ -211,37 +291,6 @@ function pathCreator {
 }
 
 
-
-#Paths to Test
-#These two are some fresh bullshit! 
-#Solution: Check for the underscore remove but what side is it??? 
-# \\DCBER01\BER_Stationdrive
-# \\filefra01\Stationdrive_FRA
-
-
-#Copy Permissions
-# Get-Acl -Path C:\Folder1 | Set-Acl -Path C:\Folder2
-
-# \\FILEHAJ01\USERSHARE$\%USERNAME%\Documents
-# \\filefra01\company
-# \\FILEDCBCLUSTER\ITNEU
-
-# pathCreator -Path "\\filefra01\company"
-# pathCreator -Path "\\FILEHAJ01\USERSHARE$\%USERNAME%\Documents"
-# pathCreator -Path "\\filefra01\FRA_tiger"
-# pathCreator -Path "\\filefra01\tiger_FRA"
-# $X = suffixPrefixScrubber "FRA_tiger"
-# $Y = suffixPrefixScrubber "tiger_FRA"
-# $Z = suffixPrefixScrubber "tiger"
-# suffixPrefixScrubber "CGN_GGR"
-
-
-# $X
-# $Y
-# $Z
-# changeDrivePathDetails -GPDomain $GPDom -GPID $GPID
-
-
 #  .d8888.  .o88b.  .d88b.  d8888b. d88888b 
 #  88'  YP d8P  Y8 .8P  Y8. 88  `8D 88'     
 #  `8bo.   8P      88    88 88oodD' 88ooooo 
@@ -251,13 +300,18 @@ function pathCreator {
 
 #Scope
 # Scan and Change
-$GPO = Get-GPO -All
+# $GPO = Get-GPO -All
+$GPO = Get-GPO -Name AndrewDriveGPO
+
  
 foreach ($Policy in $GPO) {
 
     $GPOID = $Policy.Id
     $GPODom = $Policy.DomainName
     $GPODisp = $Policy.DisplayName
-    Write-Output $GPODisp
-    changeDrivePathDetails -GPI $GPOID -GPDom $GPODom
+    
+    changeDrivePathDetails -GPI $GPOID -GPDom $GPODom -DisplayName $GPODisp
 } 
+
+# restore -Path "\\intern.ahs-de.com\SYSVOL\intern.ahs-de.com\Policies\{a6fc2730-929a-45eb-bd36-158133e746d6}\User\Preferences\Drives\"
+# # Get-Item -Path "\\intern.ahs-de.com\SYSVOL\intern.ahs-de.com\Policies\{a6fc2730-929a-45eb-bd36-158133e746d6}\User\Preferences\Drives\*"

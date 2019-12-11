@@ -1,10 +1,16 @@
-param([string]$Station)
+param([Parameter(mandatory=$true)]
+    [string]$Station,
+    [switch]$Reverse
+
+    )
 
 #Test args
 if($station -eq ''){
     write-host "No Station Provided `n Stop"
     break
 }
+
+
 
 #Flags
 $MucGO  = $false	
@@ -30,6 +36,4 @@ switch ($Station) {
     Default { return "Station Not Recognised" }
 }
 
-$HajGO
-
-$FraGO
+$Reverse
