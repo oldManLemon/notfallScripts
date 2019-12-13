@@ -1,7 +1,8 @@
 param([Parameter(mandatory = $true)]
     [string]$Station,
     [switch]$Restore, #Should restore the files and delete the drives.xml
-    [switch] $ForceNewRestorePoint #Will delete the orig files and replace them with new copies. 
+    [switch] $ForceNewRestorePoint, #Will delete the orig files and replace them with new copies. 
+    [switch] $Live #Will only pipe or show on screen the expected changes unless Live is triggered then it will actually perform actions
 
 )
 
@@ -9,6 +10,16 @@ param([Parameter(mandatory = $true)]
 if ($station -eq '') {
     write-host "No Station Provided `n Stop"
     break
+}
+
+#Live warning
+if($Live){
+    Write-Host 'Warning: This will make changes to GPO policies. Do you wish to continue?' -ForegroundColor Red
+   $Ans=Read-Host -Prompt 'y or n'
+   if(-Not ($Ans -eq 'y')){
+       Write-Host 'Answer not y, breaking' -ForegroundColor Yellow
+    break
+   }
 }
 
 #Flag Collection
@@ -37,56 +48,44 @@ switch ($Station) {
     Default { return "Station Not Recognised" }
 }
 
-function restore {
-    #Restores the backup files to thier original State. 
-    #It is error Handled and built in a round a bout method to problems
-    Param([string]$Path)
-    $Backup = $Path + "Drives.xml.orig"
-    $XMLFile = $Path + "Drives.xml"
-    $BackupOfTheBackup = $Path + "Drives.x"
-    if (Test-Path $Backup) {
-        "I will now remove"
-        #Delete XML!
-        try {
-            #A bit much here but it should fail if it can't rename the back up meaning it doesn't exist
-            #This is done so to avoid deletion of Drives.xml beofre the seeing if the rename is there as the over the network this can be slow to Test-Path accuratly.
-            #Thus should avoid false postives. 
-            Rename-Item $Backup -NewName "Drives.x"
-            
-        }
-        catch {
-            Write-Output "Failed to Find Restore Point"
-            Write-Output | Get-Item $Path*
-            Write-Host "Restore Unsucessful" -ForegroundColor Red
-        }
-        try {
-            Remove-Item $XMLFile
-        }
-        catch {
-            Write-Output "Failed to Remove Drive Folder: $XMLFile"
-            Write-Host "Restore Unsucessful" -ForegroundColor Red
-        }
-        try {
-            Rename-Item  $BackupOfTheBackup -NewName "Drives.xml"
-            Write-Host "Restore Successful" -ForegroundColor Green
-        }
-        catch {
-            Write-Output "Failed to Rename and Restore backup : $BackupOfTheBackup "
-            Write-Host "Restore Unsucessful" -ForegroundColor Red
-        }
-       
-    }
-    else {
-        Write-Host "No Restore Point Available" -ForegroundColor Red
-        Write-Output "No Restore Point Available"
+function driveMapPaths {
+    Param($FilePath, [switch]$RestoreMode)
+    #OK Drivemaps contain more than one map... some my suggest obviously
+    $FilePath
+    [xml]$xml = Get-Content $FilePath
+    foreach ( $drivemap in $xml.Drives.Drive ) {
+        if ($RestoreMode) {
+            #Split path mode
+            'enter restore mode'
+            $path = $drivemap.Properties.GetAttribute("path")
+            if($path -match $Station ){
+                $file = Split-Path $FilePath
+                restore -Path $file
+                return $true
+            }
+            Write-Host "Failed Station Check `nPlease check" -ForegroundColor Yellow
 
+        }
+        else {
+            $path = $drivemap.Properties.GetAttribute("path")
+            Write-Output "OLD path: "$path
+            $newMapPath = pathCreator -Path $path
+            Write-Output "New path: "$newMapPath
+            Write-Output "*************************`n"
+            if ($Live) {
+                $xml.Drives.Drive.Properties.SetAttribute("path", $newMapPath)
+                $xml.Save($file)
+            }
+        }
+        
+        
     }
-
 }
 
 #Path should be consistent
 function changeDrivePathDetails {
     Param($GPDom, $GPID, $DisplayName)
+    #This is the main function loop
     
     #Changes path to a newly specified path
     if (Test-Path "\\$($GPDom)\SYSVOL\$($GPDom)\Policies\{$($GPID)}\User\Preferences\Drives\Drives.xml") {
@@ -94,37 +93,28 @@ function changeDrivePathDetails {
         $DrivePath = "\\$($GPDom)\SYSVOL\$($GPDom)\Policies\{$($GPID)}\User\Preferences\Drives\"
         $file = $DrivePath + "Drives.xml"
         Write-Output 'Policy Name: '$DisplayName
-
-      
-       
-            # #Write the Restore point
-            # if (-Not (Test-Path $file".orig")) {
-            #     Write-Output "Restore Point Created"
-            #     Write-Output $file".orig"
-            #     Copy-Item -Path $file -Destination $file".orig"  
-            # }
-            # else {
-            #     Write-Output "Restore Point Found"
-            #     Write-Output $file".orig"
-            # }
-        
-
-            #OK Drivemaps contain more than one map... some my suggest obviously
-            [xml]$xml = Get-Content $file
-            foreach ( $drivemap in $xml.Drives.Drive ) {
-
-                $path = $drivemap.Properties.GetAttribute("path")
-                Write-Output "OLD path: "$path
-                $path = pathCreator -Path $path
-                Write-Output "New path: "$path
-                Write-Output "*************************`n"
-                #$xml.Drives.Drive.Properties.SetAttribute("path", $path)
-                #$xml.Save($file)
+            
+        if ($Restore) {
+            #Test path to See if Segment exists then 
+            
+            driveMapPaths -FilePath $file -RestoreMode
+        }
+        else {
+            #Write the Restore point
+            #Write Restore Points for all now
+            if (-Not (Test-Path $file".orig")) {
+                Write-Output "Restore Point Created"
+                Write-Output $file".orig"
+                Copy-Item -Path $file -Destination $file".orig"  
+            }
+            else {
+                Write-Output "Restore Point Found"
+                Write-Output $file".orig"
             }
 
+            driveMapPaths -FilePath $file
         
-
-        
+        }    
         
     }
 }#End changeDrivePathDetails
@@ -291,6 +281,53 @@ function pathCreator {
         }
     }
     
+}
+
+function restore {
+    #Restores the backup files to thier original State. 
+    #It is error Handled and built in a round a bout method to problems
+    Param([string]$Path)
+    $Backup = $Path + "Drives.xml.orig"
+    $XMLFile = $Path + "Drives.xml"
+    $BackupOfTheBackup = $Path + "Drives.x"
+    if (Test-Path $Backup) {
+        "I will now remove"
+        #Delete XML!
+        try {
+            #A bit much here but it should fail if it can't rename the back up meaning it doesn't exist
+            #This is done so to avoid deletion of Drives.xml beofre the seeing if the rename is there as the over the network this can be slow to Test-Path accuratly.
+            #Thus should avoid false postives. 
+            Rename-Item $Backup -NewName "Drives.x"
+            
+        }
+        catch {
+            Write-Output "Failed to Find Restore Point"
+            Write-Output | Get-Item $Path*
+            Write-Host "Restore Unsucessful" -ForegroundColor Red
+        }
+        try {
+            Remove-Item $XMLFile
+        }
+        catch {
+            Write-Output "Failed to Remove Drive Folder: $XMLFile"
+            Write-Host "Restore Unsucessful" -ForegroundColor Red
+        }
+        try {
+            Rename-Item  $BackupOfTheBackup -NewName "Drives.xml"
+            Write-Host "Restore Successful" -ForegroundColor Green
+        }
+        catch {
+            Write-Output "Failed to Rename and Restore backup : $BackupOfTheBackup "
+            Write-Host "Restore Unsucessful" -ForegroundColor Red
+        }
+       
+    }
+    else {
+        Write-Host "No Restore Point Available" -ForegroundColor Red
+        Write-Output "No Restore Point Available"
+
+    }
+
 }
 
 
