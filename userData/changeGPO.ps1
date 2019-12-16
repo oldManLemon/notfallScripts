@@ -58,6 +58,7 @@ function driveMapPaths {
             #Split path mode
             'enter restore mode'
             $path = $drivemap.Properties.GetAttribute("path")
+            #Won't work with all properly
             if($path -match $Station ){
                 $file = Split-Path $FilePath
                 restore -Path $file
@@ -105,7 +106,10 @@ function changeDrivePathDetails {
             if (-Not (Test-Path $file".orig")) {
                 Write-Output "Restore Point Created"
                 Write-Output $file".orig"
-                Copy-Item -Path $file -Destination $file".orig"  
+                if($Live){
+                   Copy-Item -Path $file -Destination $file".orig"  
+                }
+                 
             }
             else {
                 Write-Output "Restore Point Found"
