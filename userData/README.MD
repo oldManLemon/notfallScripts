@@ -65,7 +65,7 @@ Restore will restore the drive paths from the current form to their backed up ve
 Script will currently not replace restore points if they already exist. If you wish to set a new restore point use this flag. Note that this will override the current restore point. 
 
 #### `-Live[switch]`
-Live will mean the script actually makes changes. If the live flag is not used then you will only receive a printout of the scripts expected actions
+Live will mean the script actually makes changes. If the live flag is not used then you will only receive a printout of the scripts expected actions. 
 
 
   
